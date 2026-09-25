@@ -1,15 +1,18 @@
 # Argn — Today screen prototype
 
-Clickable browser prototype of the three Today states from the Figma file
+Clickable browser prototype of the two Today states from the Figma file
 (`Trial` → `Design` page). Built to the frame size of iPhone 17 — 402 × 874.
 
 ## States
 
-| URL | Figma frame |
-| --- | --- |
-| `/` | `Today Scroll` — full content from `Today Full`, scrolling inside the 402 × 874 window |
-| `/no-upcoming` | `Today Scroll No Upcoming` |
-| `/empty` | `Today Empty` |
+| URL | Figma frame | |
+| --- | --- | --- |
+| `/` | `Today Scroll` / `Today Full` | a day with scheduled tours, scrolling inside the 402 × 874 window |
+| `/empty` | `Today Empty` | a day with no scheduled tours |
+
+The two states are what the brief asks for. The empty one drops the zone
+boundary: with no history below it, a second ground would separate nothing and
+the line would promise content it cannot deliver.
 
 A switcher above the phone moves between them. On a phone-sized screen the
 device fills the viewport and the switcher becomes a thin bar at the top.
@@ -38,9 +41,11 @@ a direct hit or refresh.
 - Type, colour, radii, padding and gaps are taken from the Figma nodes, not
   eyeballed. Key element positions were measured against the frame and match
   within 1 px.
-- The scroll mask reproduces the `Scroll Effect` gradient from Figma (a 35 px
-  fade leaving 44 px clear at the edge) and mirrors it at the top against the
-  status bar, so content fades the same way going up as going down.
+- The bottom edge uses the `Scroll Effect` gradient mask from Figma — a 35 px
+  fade leaving 44 px clear. The top edge does not fade to transparent: content
+  keeps its ground and is progressively blurred instead (four stacked
+  `backdrop-filter` layers), so the clock stays legible without a plate of
+  colour behind it.
 - The status bar is the exported Figma SVG, used as-is (`public/statusbar.svg`).
 - Every icon is the SVG exported from Figma, path data verbatim, in
   `src/icons.jsx`. Only the fill is swapped so a tab can switch between the

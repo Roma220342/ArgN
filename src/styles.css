@@ -246,14 +246,16 @@ body {
   gap: 32px;
 }
 
-.zone-tint__content {
+.zone-tint__content,
+.zone-plain__content {
   display: flex;
   flex-direction: column;
   gap: 32px;
 }
 
-/* the Upcoming section carries the tint zone's bottom padding */
-.zone-tint__content > .section:last-child {
+/* the Upcoming section carries the zone's bottom padding */
+.zone-tint__content > .section:last-child,
+.zone-plain__content > .section:last-child {
   padding-bottom: 32px;
 }
 

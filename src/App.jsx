@@ -24,16 +24,16 @@ const PLAY_COPY = {
   context: 'Try this on your next tour.',
 }
 
-/* ------------------------------------------------ Today Scroll */
+/* ------------------------------------------------ a day with scheduled tours */
 
-function TodayScroll() {
+function TodayScheduled() {
   return (
     <div className="sheet">
       <div className="zone-tint">
         <Header />
         <div className="zone-tint__content">
           <Play eyebrow="Today's Play" {...PLAY_COPY} />
-          <Section label="Upcoming" action="Show 4 more">
+          <Section label="Upcoming" action="Show more">
             <NextTourCard
               name="Maya Chen"
               when="in 20 min"
@@ -45,87 +45,37 @@ function TodayScroll() {
         </div>
       </div>
 
-      <Section label="Unfinished tours" action="Show more">
-        <RowCard
-          title="2BR B2 Floorplan Tour"
-          meta="Confirm units shown"
-          tone="tint"
-          icon="info"
-        />
-        <RowCard
-          title="Tour - Aug 13, 7:26 PM"
-          meta="Finish details to upload"
-          tone="tint"
-          icon="info"
-        />
-      </Section>
-
       <Section label="Earlier today" action="Show less">
         <PendingCard title="Tour" meta="Pending upload..." />
         <RecapCard title="Tyler - 1BR Heights Layout" meta={RECAP_META} summary={SUMMARY} />
-        <RecapCard title="Tyler - 1BR Heights Layout" meta={RECAP_META} summary={SUMMARY} />
-      </Section>
-
-      <Section label="Yesterday" action="Show less">
-        <RecapCard title="Tyler - 1BR Heights Layout" meta={RECAP_META} summary={SUMMARY} />
-        <RecapCard
-          title="Althea A - 2BR Downstairs Sept Move"
-          meta={RECAP_META}
-          summary={SUMMARY}
-        />
-        <RecapCard title="2BR B2 Floorplan Tour" meta={RECAP_META} summary={SUMMARY} />
         <RecapCard title="Tyler - 1BR Heights Layout" meta={RECAP_META} summary={SUMMARY} />
       </Section>
     </div>
   )
 }
 
-/* ------------------------------------------------ Today Scroll — No Upcoming */
+/* ------------------------------------------------ a day with no scheduled tours */
 
-function TodayNoUpcoming() {
+// One ground, no zone boundary: with no history below there is nothing for a
+// second zone to separate, and a line that promises content it cannot deliver
+// reads as a screen that failed to load.
+function TodayNoTours() {
   return (
-    <div className="sheet">
-      <div className="zone-tint">
+    <div className="sheet sheet--empty">
+      <div className="zone-plain">
         <Header />
-        <div className="zone-tint__content">
+        <div className="zone-plain__content">
           <Play eyebrow="Next Play" {...PLAY_COPY} />
           <Section label="Upcoming">
             <EmptyRowCard title="No tours scheduled today" />
           </Section>
         </div>
       </div>
-
-      <Section label="Yesterday" action="Show less">
-        <RecapCard title="Tyler - 1BR Heights Layout" meta={RECAP_META} summary={SUMMARY} />
-        <RecapCard
-          title="Althea A - 2BR Downstairs Sept Move"
-          meta={RECAP_META}
-          summary={SUMMARY}
-        />
-        <RecapCard title="2BR B2 Floorplan Tour" meta={RECAP_META} summary={SUMMARY} />
-        <RecapCard title="Tyler - 1BR Heights Layout" meta={RECAP_META} summary={SUMMARY} />
-      </Section>
-    </div>
-  )
-}
-
-/* ------------------------------------------------ Today Empty */
-
-function TodayEmpty() {
-  return (
-    <div className="sheet sheet--empty">
-      <div className="zone-plain">
-        <Header />
-        <Section label="Upcoming">
-          <EmptyRowCard title="No tours scheduled today" />
-        </Section>
-      </div>
       <div className="emptystate">
-        <span className="emptystate__icon"><Icon name="buildings" color="#6e6e68" /></span>
-        <div className="emptystate__text">
-          <p className="emptystate__title">No tours yet</p>
-          <p className="emptystate__hint">Start your next tour to see it here.</p>
-        </div>
+        <span className="emptystate__icon">
+          <Icon name="buildings" color="#6e6e68" />
+        </span>
+        <p className="emptystate__hint">Your tours appear here</p>
       </div>
     </div>
   )
@@ -134,9 +84,8 @@ function TodayEmpty() {
 /* ------------------------------------------------ shell */
 
 const STATES = [
-  { path: '/', label: 'Scheduled', Screen: TodayScroll, scrolls: true },
-  { path: '/no-upcoming', label: 'No tours', Screen: TodayNoUpcoming, scrolls: true },
-  { path: '/empty', label: 'New account', Screen: TodayEmpty, scrolls: false },
+  { path: '/', label: 'Scheduled tours', Screen: TodayScheduled, scrolls: true },
+  { path: '/empty', label: 'No tours', Screen: TodayNoTours, scrolls: false },
 ]
 
 function useRoute() {
