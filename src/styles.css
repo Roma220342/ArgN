@@ -1,0 +1,838 @@
+/* ------------------------------------------------------------------
+   Argn — Today screen prototype
+   Every value below is taken from the Figma file (Trial / Design page).
+   ------------------------------------------------------------------ */
+
+:root {
+  /* Ground */
+  --tint: #efefeb;
+  --surface: #fafaf9;
+  --hairline: #e0e0dc;
+
+  /* Text */
+  --text-primary: #1a1e18;
+  --text-secondary: #475242;
+  --text-muted: #6e6e68;
+
+  /* Action + accent */
+  --olive: #2c3329;
+  --gold: #e9a835;
+  --gold-text: #976711;
+  --terracotta: #bc5d48;
+
+  /* Device */
+  --frame-w: 402px;
+  --frame-h: 874px;
+  --frame-radius: 50px;
+
+  --pad-x: 16px;
+  --status-h: 62px;
+  --tabbar-h: 95px;
+
+  /* Scroll fade, from the "Scroll Effect" mask in Figma: fully clear for the
+     first 44px from the edge, then opaque by 79px. */
+  --fade-clear: 44px;
+  --fade-end: 79px;
+
+  --sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --serif: 'IBM Plex Serif', Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #d7d7d2;
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+#root {
+  min-height: 100%;
+}
+
+/* ---------------------------------------------- page shell (desktop) */
+
+.stage {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px 16px;
+}
+
+.switcher {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+}
+
+.switcher button {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.13px;
+  line-height: 18px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: transparent;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.switcher button:hover {
+  color: var(--text-primary);
+}
+
+.switcher button[data-active='true'] {
+  background: var(--olive);
+  color: var(--surface);
+}
+
+/* ---------------------------------------------- device frame */
+
+.device {
+  position: relative;
+  width: var(--frame-w);
+  height: var(--frame-h);
+  border-radius: var(--frame-radius);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  flex: none;
+}
+
+/* Top edge: no background of its own — the clock sits on a transparent strip
+   and whatever scrolls under it is progressively blurred. Four stacked layers
+   with increasing radius and shorter mask ramps give a smooth falloff; a
+   single backdrop-filter has a visible edge where the mask ends. */
+.topblur {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 112px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.topblur span {
+  position: absolute;
+  inset: 0;
+}
+
+.topblur span:nth-child(1) {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 38%, transparent 72%);
+  mask-image: linear-gradient(180deg, #000 0, #000 38%, transparent 72%);
+}
+
+.topblur span:nth-child(2) {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 26%, transparent 55%);
+  mask-image: linear-gradient(180deg, #000 0, #000 26%, transparent 55%);
+}
+
+.topblur span:nth-child(3) {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 16%, transparent 40%);
+  mask-image: linear-gradient(180deg, #000 0, #000 16%, transparent 40%);
+}
+
+.topblur span:nth-child(4) {
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 6%, transparent 26%);
+  mask-image: linear-gradient(180deg, #000 0, #000 6%, transparent 26%);
+}
+
+/* ---------------------------------------------- status bar */
+
+/* Sits above the blur so the clock stays crisp while content softens under it. */
+.statusbar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* the exported Figma SVG, used as-is */
+.statusbar__art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ---------------------------------------------- scroll area */
+
+.scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Only the bottom fades to transparent — below it there is always the
+     surface zone to fade into. The top is handled by .topblur instead, so the
+     zone colour stays intact under the clock. */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0,
+    #000 calc(100% - var(--fade-end)),
+    transparent calc(100% - var(--fade-clear))
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0,
+    #000 calc(100% - var(--fade-end)),
+    transparent calc(100% - var(--fade-clear))
+  );
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll--static {
+  overflow: hidden;
+}
+
+/* the empty state has no scroll mask at all — nothing overflows */
+.scroll--nomask {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.sheet {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  background: var(--surface);
+  padding-bottom: 96px;
+}
+
+.sheet--empty {
+  gap: 0;
+  padding-bottom: var(--tabbar-h);
+}
+
+/* ---------------------------------------------- zones */
+
+.zone-tint {
+  background: var(--tint);
+  padding-top: var(--status-h);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.zone-tint__content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* the Upcoming section carries the tint zone's bottom padding */
+.zone-tint__content > .section:last-child {
+  padding-bottom: 32px;
+}
+
+.zone-plain {
+  padding-top: var(--status-h);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.header {
+  padding: 10px var(--pad-x) 0;
+}
+
+.header__title {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 29px;
+  line-height: 30px;
+  letter-spacing: -0.638px;
+  color: var(--text-primary);
+}
+
+/* ---------------------------------------------- Play block */
+
+.play {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  padding: 0 var(--pad-x);
+}
+
+.play__rule {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--gold);
+  flex: none;
+}
+
+.play__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.play__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.play__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.play__eyebrow {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20px;
+  letter-spacing: -0.16px;
+  color: var(--gold-text);
+}
+
+.play__title {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 22px;
+  letter-spacing: -0.216px;
+  color: var(--text-primary);
+}
+
+.play__instruction {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.play__context {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------- sections */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 var(--pad-x);
+}
+
+.section__label {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section__label span {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--text-muted);
+}
+
+.section__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section__action {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------------------------------------------- text button */
+
+.textbtn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 20px;
+  letter-spacing: -0.16px;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* ---------------------------------------------- cards */
+
+.card {
+  border-radius: 26px;
+  padding: 16px;
+  border: 1px solid transparent;
+}
+
+.card--surface {
+  background: var(--surface);
+  border-color: var(--hairline);
+}
+
+.card--tint {
+  background: var(--tint);
+  border-color: var(--tint);
+}
+
+.card--row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card__title {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 22px;
+  letter-spacing: -0.216px;
+  color: var(--text-primary);
+}
+
+.card__meta {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.card__summary {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-muted);
+}
+
+.card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.card__icon {
+  flex: none;
+  width: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--terracotta);
+}
+
+.card--muted .card__text {
+  opacity: 0.5;
+}
+
+/* next tour card */
+
+.nextcard {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 22px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nextcard__head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nextcard__names {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nextcard__nameline {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+.nextcard__name {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 22px;
+  letter-spacing: -0.216px;
+}
+
+.nextcard__when {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.nextcard__quote {
+  margin: 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 24px;
+  color: var(--text-primary);
+}
+
+.nextcard__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 48px;
+  border-radius: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20px;
+  letter-spacing: -0.16px;
+  cursor: default;
+}
+
+.btn--secondary {
+  background: var(--surface);
+  border: 1.5px solid var(--hairline);
+  color: var(--text-primary);
+}
+
+.btn--primary {
+  background: var(--olive);
+  border: 0;
+  color: var(--surface);
+}
+
+/* pending spinner */
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: block;
+  animation: spin 1s steps(8, end) infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------- empty state */
+
+.emptystate {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+/* the glyph is trimmed to its ink; the box keeps the Figma slot size so the
+   vertical rhythm of the empty state stays put */
+.emptystate__icon {
+  height: 53px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptystate__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.emptystate__title {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 20px;
+  letter-spacing: -0.17px;
+  color: var(--text-primary);
+}
+
+.emptystate__hint {
+  margin: 0;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------- tab bar (liquid glass) */
+
+.tabbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  height: var(--tabbar-h);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 25px 25px;
+}
+
+.tabbar__pill {
+  position: relative;
+  flex: 1 1 auto;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+}
+
+/* Liquid Glass. Per Apple's HIG the tab bar "floats above content" and its
+   items "rest on a Liquid Glass background that allows content beneath to
+   peek through" — so the fill stays translucent, the blur does the work, and
+   a specular rim catches light at opposite edges. */
+.glass {
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  background: rgba(250, 250, 249, 0.55);
+  backdrop-filter: blur(28px) saturate(190%) brightness(1.08);
+  -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(1.08);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.6),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04),
+    0 2px 6px rgba(0, 0, 0, 0.05),
+    0 10px 26px rgba(0, 0, 0, 0.09);
+  pointer-events: none;
+}
+
+/* specular highlight: a 1px rim, bright where light would catch it */
+.glass::after,
+.record__glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0) 32%,
+    rgba(255, 255, 255, 0) 62%,
+    rgba(255, 255, 255, 0.7) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.tab {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 6px 8px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.tab__selection {
+  position: absolute;
+  inset: 0;
+  border-radius: 100px;
+  background: #ededed;
+}
+
+.tab__icon {
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab__label {
+  position: relative;
+}
+
+.tab__label {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 12px;
+  letter-spacing: -0.1px;
+}
+
+.tab[data-active='true'] {
+  color: var(--text-primary);
+}
+
+.tab[data-active='true'] .tab__label {
+  font-weight: 600;
+}
+
+.record {
+  position: relative;
+  flex: none;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: default;
+}
+
+.record__bg {
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  background: var(--gold);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.06),
+    0 8px 40px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+
+/* the accessory beside the tab bar carries the same rim, so the two read as
+   one material rather than two unrelated controls */
+.record__glass {
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.record__icon {
+  position: relative;
+}
+
+/* ---------------------------------------------- phone-sized viewports */
+
+@media (max-width: 520px) {
+  .stage {
+    padding: 0;
+    gap: 0;
+    justify-content: flex-start;
+    min-height: 100dvh;
+  }
+
+  .switcher {
+    flex: none;
+    width: 100%;
+    justify-content: center;
+    border-radius: 0;
+    box-shadow: none;
+    background: #e4e4df;
+    padding: 5px;
+  }
+
+  .switcher button {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .device {
+    width: 100vw;
+    height: auto;
+    flex: 1 1 auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
